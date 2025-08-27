@@ -4,7 +4,6 @@
 //! the metrics system. Following domain-driven design principles, these
 //! types represent the core concepts of the metrics domain.
 
-use crate::{Result, TylError};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::{Duration, Instant};

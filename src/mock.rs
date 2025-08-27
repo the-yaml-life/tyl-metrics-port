@@ -9,7 +9,6 @@ use crate::errors::{metrics_config_error, metrics_recording_error};
 use crate::utils::{
     validate_counter_value, validate_labels, validate_metric_name, validate_metric_value,
 };
-use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -134,10 +133,6 @@ impl MockMetricsAdapter {
         }
     }
 
-    /// Create a new mock adapter with default configuration
-    pub fn default() -> Self {
-        Self::new(MockMetricsConfig::default())
-    }
 
     /// Get all stored metrics for inspection in tests
     ///
@@ -321,60 +316,12 @@ impl MetricsManager for MockMetricsAdapter {
     }
 }
 
-/// Builder pattern for creating mock adapters in tests
-pub struct MockAdapterBuilder {
-    config: MockMetricsConfig,
-}
-
-impl MockAdapterBuilder {
-    /// Create a new builder with default configuration
-    pub fn new() -> Self {
-        Self {
-            config: MockMetricsConfig::default(),
-        }
-    }
-
-    /// Set the service name
-    pub fn service_name(mut self, name: impl Into<String>) -> Self {
-        self.config.service_name = name.into();
-        self
-    }
-
-    /// Enable or disable metric storage
-    pub fn store_metrics(mut self, store: bool) -> Self {
-        self.config.store_metrics = store;
-        self
-    }
-
-    /// Set maximum stored metrics
-    pub fn max_stored_metrics(mut self, max: usize) -> Self {
-        self.config.max_stored_metrics = max;
-        self
-    }
-
-    /// Enable failure simulation
-    pub fn simulate_failures(mut self, rate: f64) -> Self {
-        self.config.simulate_failures = rate > 0.0;
-        self.config.failure_rate = rate.clamp(0.0, 1.0);
-        self
-    }
-
-    /// Build the mock adapter
-    pub async fn build(self) -> Result<MockMetricsAdapter> {
-        Ok(MockMetricsAdapter::new(self.config))
-    }
-
-    /// Build the mock adapter without async (for simple cases)
-    pub fn build_sync(self) -> MockMetricsAdapter {
-        MockMetricsAdapter::new(self.config)
-    }
-}
-
-impl Default for MockAdapterBuilder {
+impl Default for MockMetricsAdapter {
     fn default() -> Self {
-        Self::new()
+        Self::new(MockMetricsConfig::default())
     }
 }
+
 
 #[cfg(test)]
 mod tests {
@@ -662,23 +609,6 @@ mod tests {
         assert_eq!(stored[0].metric_type, MetricType::Timer);
     }
 
-    #[tokio::test]
-    async fn test_builder_pattern() {
-        let adapter = MockAdapterBuilder::new()
-            .service_name("test-app")
-            .max_stored_metrics(100)
-            .store_metrics(true)
-            .simulate_failures(0.1)
-            .build()
-            .await
-            .unwrap();
-
-        assert_eq!(adapter.config().service_name, "test-app");
-        assert_eq!(adapter.config().max_stored_metrics, 100);
-        assert!(adapter.config().store_metrics);
-        assert!(adapter.config().simulate_failures);
-        assert_eq!(adapter.config().failure_rate, 0.1);
-    }
 
     #[tokio::test]
     async fn test_invalid_config() {

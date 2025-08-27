@@ -6,8 +6,6 @@
 
 use super::*;
 
-/// Error category for metrics-related errors
-pub const METRICS_ERROR_CATEGORY: &str = "metrics";
 
 /// Create a metrics validation error
 ///
@@ -262,7 +260,7 @@ pub fn from_io_error(error: std::io::Error) -> TylError {
             metrics_connection_error("unknown", error.to_string())
         }
         std::io::ErrorKind::TimedOut => metrics_timeout_error("io_operation", 0),
-        _ => TylError::internal(format!("Metrics IO error: {}", error)),
+        _ => TylError::internal(format!("Metrics IO error: {error}")),
     }
 }
 
