@@ -133,7 +133,6 @@ impl MockMetricsAdapter {
         }
     }
 
-
     /// Get all stored metrics for inspection in tests
     ///
     /// This method allows tests to verify that metrics were recorded correctly.
@@ -321,7 +320,6 @@ impl Default for MockMetricsAdapter {
         Self::new(MockMetricsConfig::default())
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -608,7 +606,6 @@ mod tests {
         assert_eq!(stored[0].name, "test_timer");
         assert_eq!(stored[0].metric_type, MetricType::Timer);
     }
-
 
     #[tokio::test]
     async fn test_invalid_config() {

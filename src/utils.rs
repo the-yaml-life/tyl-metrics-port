@@ -26,7 +26,7 @@ const MAX_LABELS_COUNT: usize = 32;
 /// # Examples
 /// ```rust
 /// use tyl_metrics_port::validate_metric_name;
-/// 
+///
 /// assert!(validate_metric_name("http_requests_total").is_ok());
 /// assert!(validate_metric_name("").is_err());
 /// ```
@@ -185,7 +185,7 @@ pub fn validate_counter_value(value: f64) -> Result<()> {
 /// ```rust
 /// use std::collections::HashMap;
 /// use tyl_metrics_port::format_labels;
-/// 
+///
 /// let mut labels = HashMap::new();
 /// labels.insert("method".to_string(), "GET".to_string());
 /// let formatted = format_labels(&labels);

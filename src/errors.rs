@@ -6,7 +6,6 @@
 
 use super::*;
 
-
 /// Create a metrics validation error
 ///
 /// Used when metric names, values, or other inputs fail validation.
