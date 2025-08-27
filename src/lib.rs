@@ -22,7 +22,7 @@
 //!
 //! ```rust
 //! use tyl_metrics_port::{MetricsManager, MetricRequest, MetricType};
-//! 
+//!
 //! // In your application, inject any adapter that implements MetricsManager
 //! async fn record_metrics<M: MetricsManager>(metrics: &M) -> tyl_metrics_port::Result<()> {
 //!     let request = MetricRequest::counter("http_requests", 1.0)
@@ -38,7 +38,7 @@
 //!
 //! ```rust
 //! use tyl_metrics_port::MockMetricsAdapter;
-//! 
+//!
 //! #[tokio::test]
 //! async fn test_metrics_collection() {
 //!     let metrics = MockMetricsAdapter::new();
@@ -47,33 +47,29 @@
 //! ```
 
 // Re-export TYL framework functionality (CRITICAL pattern)
+pub use tyl_config::{ConfigManager, ConfigPlugin};
 pub use tyl_errors::{TylError, TylResult};
-pub use tyl_config::{ConfigPlugin, ConfigManager};
 pub use tyl_logging::Environment;
 
 // Core port interface
 mod port;
-pub use port::{MetricsManager, HealthStatus};
+pub use port::{HealthStatus, MetricsManager};
 
 // Domain types (port concern)
 mod types;
-pub use types::{
-    MetricRequest, MetricType, MetricValue, Labels, 
-    TimerGuard, MetricSnapshot
-};
+pub use types::{Labels, MetricRequest, MetricSnapshot, MetricType, MetricValue, TimerGuard};
 
 // Error helpers for metrics domain
 mod errors;
 pub use errors::{
-    metrics_error, metrics_config_error, metrics_connection_error,
-    metrics_recording_error, metrics_adapter_error, metrics_health_error,
+    from_io_error, from_serde_json_error, metrics_adapter_error, metrics_config_error,
+    metrics_connection_error, metrics_error, metrics_health_error, metrics_recording_error,
     metrics_serialization_error, metrics_timeout_error, MetricsErrorExt,
-    from_serde_json_error, from_io_error
 };
 
 // Utilities and validation (port concern)
 mod utils;
-pub use utils::{validate_metric_name, format_labels};
+pub use utils::{format_labels, validate_metric_name};
 
 // Mock adapter for testing and examples
 #[cfg(feature = "mock")]
@@ -100,10 +96,9 @@ mod tests {
     #[tokio::test]
     async fn test_port_basic_functionality() {
         let metrics = MockMetricsAdapter::new(MockMetricsConfig::default());
-        
-        let request = MetricRequest::counter("test_metric", 1.0)
-            .with_label("test", "true");
-            
+
+        let request = MetricRequest::counter("test_metric", 1.0).with_label("test", "true");
+
         let result = metrics.record(&request).await;
         assert!(result.is_ok());
     }
@@ -120,7 +115,7 @@ mod tests {
         let request = MetricRequest::gauge("memory_usage", 512.0)
             .with_label("unit", "MB")
             .with_label("server", "web-01");
-            
+
         assert_eq!(request.name(), "memory_usage");
         assert_eq!(request.metric_type(), &MetricType::Gauge);
         assert_eq!(request.value(), 512.0);

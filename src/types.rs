@@ -37,19 +37,19 @@ pub type Labels = HashMap<String, String>;
 pub struct MetricRequest {
     /// The metric name (must follow metric naming conventions)
     name: String,
-    
+
     /// The type of metric being recorded
     metric_type: MetricType,
-    
+
     /// The numeric value to record
     value: MetricValue,
-    
+
     /// Labels attached to this metric
     labels: Labels,
-    
+
     /// Optional help text describing what this metric measures
     help: Option<String>,
-    
+
     /// Timestamp when the metric was created (Unix epoch nanoseconds)
     timestamp: u64,
 }
@@ -66,7 +66,7 @@ impl MetricRequest {
     pub fn counter(name: impl Into<String>, value: f64) -> Self {
         Self::new(name.into(), MetricType::Counter, MetricValue::Single(value))
     }
-    
+
     /// Create a new gauge metric request
     ///
     /// # Arguments
@@ -78,7 +78,7 @@ impl MetricRequest {
     pub fn gauge(name: impl Into<String>, value: f64) -> Self {
         Self::new(name.into(), MetricType::Gauge, MetricValue::Single(value))
     }
-    
+
     /// Create a new histogram metric request
     ///
     /// # Arguments
@@ -88,9 +88,13 @@ impl MetricRequest {
     /// # Returns
     /// * `MetricRequest` - A new metric request builder
     pub fn histogram(name: impl Into<String>, value: f64) -> Self {
-        Self::new(name.into(), MetricType::Histogram, MetricValue::Single(value))
+        Self::new(
+            name.into(),
+            MetricType::Histogram,
+            MetricValue::Single(value),
+        )
     }
-    
+
     /// Create a new timer metric request
     ///
     /// # Arguments
@@ -106,7 +110,7 @@ impl MetricRequest {
             MetricValue::Single(duration.as_secs_f64()),
         )
     }
-    
+
     /// Internal constructor for creating metric requests
     fn new(name: String, metric_type: MetricType, value: MetricValue) -> Self {
         Self {
@@ -121,7 +125,7 @@ impl MetricRequest {
                 .as_nanos() as u64,
         }
     }
-    
+
     /// Add a label to the metric request
     ///
     /// # Arguments
@@ -134,7 +138,7 @@ impl MetricRequest {
         self.labels.insert(key.into(), value.into());
         self
     }
-    
+
     /// Add multiple labels to the metric request
     ///
     /// # Arguments
@@ -153,7 +157,7 @@ impl MetricRequest {
         }
         self
     }
-    
+
     /// Add help text to the metric request
     ///
     /// # Arguments
@@ -165,40 +169,44 @@ impl MetricRequest {
         self.help = Some(help.into());
         self
     }
-    
+
     /// Get the metric name
     pub fn name(&self) -> &str {
         &self.name
     }
-    
+
     /// Get the metric type
     pub fn metric_type(&self) -> &MetricType {
         &self.metric_type
     }
-    
+
     /// Get the metric value
     pub fn value(&self) -> f64 {
         match &self.value {
             MetricValue::Single(v) => *v,
-            MetricValue::Histogram { sum, count, buckets: _ } => sum / (*count as f64),
+            MetricValue::Histogram {
+                sum,
+                count,
+                buckets: _,
+            } => sum / (*count as f64),
         }
     }
-    
+
     /// Get the metric value as the full value object
     pub fn metric_value(&self) -> &MetricValue {
         &self.value
     }
-    
+
     /// Get the labels
     pub fn labels(&self) -> &Labels {
         &self.labels
     }
-    
+
     /// Get the help text if available
     pub fn help(&self) -> Option<&str> {
         self.help.as_deref()
     }
-    
+
     /// Get the timestamp
     pub fn timestamp(&self) -> u64 {
         self.timestamp
@@ -213,13 +221,13 @@ impl MetricRequest {
 pub enum MetricType {
     /// Counter - Monotonically increasing value (requests, errors, bytes sent)
     Counter,
-    
+
     /// Gauge - Value that can go up or down (memory usage, CPU, active connections)
     Gauge,
-    
+
     /// Histogram - Statistical distribution of values (request latencies, payload sizes)
     Histogram,
-    
+
     /// Timer - Duration measurements (typically converted to histograms by adapters)
     Timer,
 }
@@ -243,7 +251,7 @@ impl std::fmt::Display for MetricType {
 pub enum MetricValue {
     /// Single numeric value (used for counters, gauges, and simple observations)
     Single(f64),
-    
+
     /// Histogram distribution with buckets
     Histogram {
         /// Total sum of all observed values
@@ -275,7 +283,7 @@ pub struct HistogramBucket {
 /// ## Example Usage
 /// ```rust
 /// use tyl_metrics_port::TimerGuard;
-/// 
+///
 /// {
 ///     let _timer = metrics.start_timer("database_query", labels);
 ///     // ... perform database operation ...
@@ -285,13 +293,13 @@ pub struct HistogramBucket {
 pub struct TimerGuard {
     /// The metric name to record to
     name: String,
-    
+
     /// Labels to attach to the recorded metric
     labels: Labels,
-    
+
     /// Start time for calculating duration
     start_time: Instant,
-    
+
     /// Callback function to record the metric when dropped
     /// Uses trait object to abstract over different adapter types
     recorder: Box<dyn Fn(MetricRequest) + Send + Sync>,
@@ -315,12 +323,12 @@ impl TimerGuard {
             recorder: Box::new(recorder),
         }
     }
-    
+
     /// Get the elapsed duration so far (without stopping the timer)
     pub fn elapsed(&self) -> Duration {
         self.start_time.elapsed()
     }
-    
+
     /// Manually record the timer and consume the guard
     pub fn record(self) {
         // Dropping will trigger the recording
@@ -332,7 +340,7 @@ impl Drop for TimerGuard {
         let duration = self.start_time.elapsed();
         let request = MetricRequest::timer(self.name.clone(), duration)
             .with_labels(self.labels.iter().map(|(k, v)| (k.as_str(), v.as_str())));
-        
+
         (self.recorder)(request);
     }
 }
@@ -345,31 +353,26 @@ impl Drop for TimerGuard {
 pub struct MetricSnapshot {
     /// The metric name
     pub name: String,
-    
+
     /// The metric type
     pub metric_type: MetricType,
-    
+
     /// The current value
     pub value: MetricValue,
-    
+
     /// Labels attached to this metric
     pub labels: Labels,
-    
+
     /// Optional help text
     pub help: Option<String>,
-    
+
     /// Timestamp of this snapshot (Unix epoch nanoseconds)
     pub timestamp: u64,
 }
 
 impl MetricSnapshot {
     /// Create a new metric snapshot
-    pub fn new(
-        name: String,
-        metric_type: MetricType,
-        value: MetricValue,
-        labels: Labels,
-    ) -> Self {
+    pub fn new(name: String, metric_type: MetricType, value: MetricValue, labels: Labels) -> Self {
         Self {
             name,
             metric_type,
@@ -382,7 +385,7 @@ impl MetricSnapshot {
                 .as_nanos() as u64,
         }
     }
-    
+
     /// Add help text to the snapshot
     pub fn with_help(mut self, help: impl Into<String>) -> Self {
         self.help = Some(help.into());
@@ -407,7 +410,7 @@ impl From<&MetricRequest> for MetricSnapshot {
 mod tests {
     use super::*;
     use std::time::Duration;
-    
+
     #[test]
     fn test_metric_request_counter() {
         let request = MetricRequest::counter("http_requests", 1.0);
@@ -416,46 +419,45 @@ mod tests {
         assert_eq!(request.value(), 1.0);
         assert!(request.labels().is_empty());
     }
-    
+
     #[test]
     fn test_metric_request_with_labels() {
         let request = MetricRequest::gauge("memory_usage", 512.0)
             .with_label("unit", "MB")
             .with_label("server", "web-01");
-            
+
         assert_eq!(request.labels().len(), 2);
         assert_eq!(request.labels().get("unit"), Some(&"MB".to_string()));
         assert_eq!(request.labels().get("server"), Some(&"web-01".to_string()));
     }
-    
+
     #[test]
     fn test_metric_request_with_multiple_labels() {
         let labels = vec![("method", "GET"), ("status", "200")];
-        let request = MetricRequest::counter("requests", 1.0)
-            .with_labels(labels);
-            
+        let request = MetricRequest::counter("requests", 1.0).with_labels(labels);
+
         assert_eq!(request.labels().len(), 2);
         assert_eq!(request.labels().get("method"), Some(&"GET".to_string()));
         assert_eq!(request.labels().get("status"), Some(&"200".to_string()));
     }
-    
+
     #[test]
     fn test_metric_request_with_help() {
         let request = MetricRequest::histogram("request_duration", 0.25)
             .with_help("Time spent processing HTTP requests");
-            
+
         assert_eq!(request.help(), Some("Time spent processing HTTP requests"));
     }
-    
+
     #[test]
     fn test_metric_request_timer() {
         let duration = Duration::from_millis(150);
         let request = MetricRequest::timer("db_query", duration);
-        
+
         assert_eq!(request.metric_type(), &MetricType::Timer);
         assert_eq!(request.value(), 0.15); // 150ms as seconds
     }
-    
+
     #[test]
     fn test_metric_types_display() {
         assert_eq!(MetricType::Counter.to_string(), "counter");
@@ -463,18 +465,18 @@ mod tests {
         assert_eq!(MetricType::Histogram.to_string(), "histogram");
         assert_eq!(MetricType::Timer.to_string(), "timer");
     }
-    
+
     #[test]
     fn test_histogram_bucket() {
         let bucket = HistogramBucket {
             upper_bound: 1.0,
             count: 42,
         };
-        
+
         assert_eq!(bucket.upper_bound, 1.0);
         assert_eq!(bucket.count, 42);
     }
-    
+
     #[test]
     fn test_metric_value_single() {
         let value = MetricValue::Single(123.45);
@@ -483,23 +485,36 @@ mod tests {
             _ => panic!("Expected single value"),
         }
     }
-    
+
     #[test]
     fn test_metric_value_histogram() {
         let buckets = vec![
-            HistogramBucket { upper_bound: 0.1, count: 10 },
-            HistogramBucket { upper_bound: 1.0, count: 25 },
-            HistogramBucket { upper_bound: 10.0, count: 35 },
+            HistogramBucket {
+                upper_bound: 0.1,
+                count: 10,
+            },
+            HistogramBucket {
+                upper_bound: 1.0,
+                count: 25,
+            },
+            HistogramBucket {
+                upper_bound: 10.0,
+                count: 35,
+            },
         ];
-        
+
         let value = MetricValue::Histogram {
             sum: 45.0,
             count: 35,
             buckets,
         };
-        
+
         match value {
-            MetricValue::Histogram { sum, count, buckets } => {
+            MetricValue::Histogram {
+                sum,
+                count,
+                buckets,
+            } => {
                 assert_eq!(sum, 45.0);
                 assert_eq!(count, 35);
                 assert_eq!(buckets.len(), 3);
@@ -507,55 +522,60 @@ mod tests {
             _ => panic!("Expected histogram value"),
         }
     }
-    
+
     #[test]
     fn test_metric_snapshot_creation() {
-        let labels = vec![("env", "test")].into_iter()
+        let labels = vec![("env", "test")]
+            .into_iter()
             .map(|(k, v)| (k.to_string(), v.to_string()))
             .collect();
-            
+
         let snapshot = MetricSnapshot::new(
             "test_metric".to_string(),
             MetricType::Counter,
             MetricValue::Single(42.0),
             labels,
-        ).with_help("Test metric for unit tests");
-        
+        )
+        .with_help("Test metric for unit tests");
+
         assert_eq!(snapshot.name, "test_metric");
         assert_eq!(snapshot.metric_type, MetricType::Counter);
-        assert_eq!(snapshot.help, Some("Test metric for unit tests".to_string()));
+        assert_eq!(
+            snapshot.help,
+            Some("Test metric for unit tests".to_string())
+        );
         assert!(snapshot.timestamp > 0);
     }
-    
+
     #[test]
     fn test_metric_snapshot_from_request() {
         let request = MetricRequest::counter("test", 1.0)
             .with_label("env", "test")
             .with_help("Test metric");
-            
+
         let snapshot = MetricSnapshot::from(&request);
         assert_eq!(snapshot.name, request.name());
         assert_eq!(snapshot.metric_type, *request.metric_type());
         assert_eq!(snapshot.labels, *request.labels());
         assert_eq!(snapshot.help, request.help().map(|s| s.to_string()));
     }
-    
+
     #[test]
     fn test_timer_guard_creation() {
         let labels = HashMap::new();
         let recorded_metrics = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
         let recorded_metrics_clone = recorded_metrics.clone();
-        
+
         let recorder = move |request: MetricRequest| {
             recorded_metrics_clone.lock().unwrap().push(request);
         };
-        
+
         {
             let _timer = TimerGuard::new("test_timer".to_string(), labels, recorder);
             std::thread::sleep(Duration::from_millis(1));
             // Timer drops here and should record
         }
-        
+
         let metrics = recorded_metrics.lock().unwrap();
         assert_eq!(metrics.len(), 1);
         assert_eq!(metrics[0].name(), "test_timer");
