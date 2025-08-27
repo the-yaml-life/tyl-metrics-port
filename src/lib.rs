@@ -69,18 +69,18 @@ pub use errors::{
 
 // Utilities and validation (port concern)
 mod utils;
-pub use utils::{format_labels, validate_metric_name};
+pub use utils::{format_labels, validate_metric_name, normalize_metric_name};
 
 // Mock adapter for testing and examples
 #[cfg(feature = "mock")]
 mod mock;
 #[cfg(feature = "mock")]
-pub use mock::MockMetricsAdapter;
+pub use mock::{MockMetricsAdapter, MockMetricsConfig};
 
 // Always expose mock for examples and testing
 #[cfg(not(feature = "mock"))]
 mod mock;
-pub use mock::MockMetricsAdapter;
+pub use mock::{MockMetricsAdapter, MockMetricsConfig};
 
 /// Result type for metrics operations using TYL error handling
 pub type Result<T> = TylResult<T>;

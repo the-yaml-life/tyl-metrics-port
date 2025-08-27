@@ -282,13 +282,17 @@ pub struct HistogramBucket {
 ///
 /// ## Example Usage
 /// ```rust
-/// use tyl_metrics_port::TimerGuard;
+/// use tyl_metrics_port::{MockMetricsAdapter, MockMetricsConfig, Labels, MetricsManager};
 ///
+/// # tokio_test::block_on(async {
+/// let metrics = MockMetricsAdapter::new(MockMetricsConfig::default());
+/// let labels = Labels::new();
 /// {
 ///     let _timer = metrics.start_timer("database_query", labels);
 ///     // ... perform database operation ...
 ///     // Duration automatically recorded when timer drops
 /// }
+/// # });
 /// ```
 pub struct TimerGuard {
     /// The metric name to record to

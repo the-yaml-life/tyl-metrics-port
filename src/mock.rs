@@ -91,23 +91,20 @@ impl MockMetricsConfig {
 ///
 /// ## Example Usage
 /// ```rust
-/// use tyl_metrics_port::{MockMetricsAdapter, MockMetricsConfig, MetricRequest};
+/// use tyl_metrics_port::{MockMetricsAdapter, MockMetricsConfig, MetricRequest, MetricsManager};
 ///
-/// #[tokio::main]
-/// async fn main() -> Result<(), Box<dyn std::error::Error>> {
-///     let config = MockMetricsConfig::new("test-app");
-///     let metrics = MockMetricsAdapter::new(config).await?;
-///     
-///     // Record some metrics
-///     let request = MetricRequest::counter("test_counter", 1.0);
-///     metrics.record(&request).await?;
-///     
-///     // Inspect what was recorded
-///     let stored = metrics.get_stored_metrics().await;
-///     assert_eq!(stored.len(), 1);
-///     
-///     Ok(())
-/// }
+/// # tokio_test::block_on(async {
+/// let config = MockMetricsConfig::new("test-app");
+/// let metrics = MockMetricsAdapter::new(config);
+/// 
+/// // Record some metrics
+/// let request = MetricRequest::counter("test_counter", 1.0);
+/// metrics.record(&request).await.unwrap();
+/// 
+/// // Inspect what was recorded
+/// let stored = metrics.get_stored_metrics().await;
+/// assert_eq!(stored.len(), 1);
+/// # });
 /// ```
 pub struct MockMetricsAdapter {
     /// Configuration for this adapter

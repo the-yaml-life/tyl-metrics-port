@@ -21,8 +21,11 @@ use std::time::Duration;
 ///
 /// ## Example Implementation
 /// ```rust
-/// use tyl_metrics_port::{MetricsManager, MetricRequest, Result, async_trait};
-/// use std::collections::HashMap;
+/// use tyl_metrics_port::{MetricsManager, MetricRequest, Result, async_trait, HealthStatus, TimerGuard, Labels, MetricSnapshot};
+///
+/// pub struct MyConfig {
+///     pub service_name: String,
+/// }
 ///
 /// pub struct MyMetricsAdapter {
 ///     config: MyConfig,
@@ -39,6 +42,12 @@ use std::time::Duration;
 ///     async fn record(&self, request: &MetricRequest) -> Result<()> {
 ///         // Implementation specific logic
 ///         Ok(())
+///     }
+///     
+///     fn start_timer(&self, name: &str, labels: Labels) -> TimerGuard {
+///         TimerGuard::new(name.to_string(), labels, |_| {
+///             // Timer callback
+///         })
 ///     }
 ///     
 ///     async fn health_check(&self) -> Result<HealthStatus> {
