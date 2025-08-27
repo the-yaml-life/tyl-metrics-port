@@ -1,163 +1,142 @@
-//! # TYL {Module Name}
+//! # TYL Metrics Port
 //!
-//! {Module description - replace with actual description}
+//! **Hexagonal Architecture Port** for metrics collection in the TYL framework.
 //!
-//! ## Features
+//! This module defines the **pure interface** for metrics collection without any implementation details.
+//! Following the hexagonal architecture pattern, it provides:
 //!
-//! - {Feature 1}
-//! - {Feature 2}
-//! - Hexagonal architecture with ports and adapters
-//! - Comprehensive error handling
-//! - Full test coverage
+//! - **Port Interface**: `MetricsManager` trait
+//! - **Domain Types**: Core metrics types and value objects
+//! - **Mock Adapter**: Simple implementation for testing and examples
+//!
+//! ## Architecture Philosophy
+//!
+//! This is a **PORT** - it defines **WHAT** can be done, not **HOW**.
+//! Concrete implementations (adapters) are in separate modules:
+//!
+//! - `tyl-prometheus-metrics-adapter` - Prometheus implementation
+//! - `tyl-otel-metrics-adapter` - OpenTelemetry implementation (future)
+//! - Additional adapters can be created by implementing `MetricsManager`
 //!
 //! ## Quick Start
 //!
 //! ```rust
-//! use tyl_{module_name}::{MainTrait, MainType};
-//!
-//! // Basic usage example
-//! let instance = MainType::new();
-//! // Add usage example here
+//! use tyl_metrics_port::{MetricsManager, MetricRequest, MetricType};
+//! 
+//! // In your application, inject any adapter that implements MetricsManager
+//! async fn record_metrics<M: MetricsManager>(metrics: &M) -> tyl_metrics_port::Result<()> {
+//!     let request = MetricRequest::counter("http_requests", 1.0)
+//!         .with_label("method", "GET")
+//!         .with_label("status", "200");
+//!     
+//!     metrics.record(&request).await?;
+//!     Ok(())
+//! }
 //! ```
 //!
-//! ## Architecture
+//! ## Mock for Testing
 //!
-//! This module follows hexagonal architecture:
-//!
-//! - **Port (Interface)**: `{MainTrait}` - defines the contract
-//! - **Adapters**: Various implementations of the port
-//! - **Domain Logic**: Core business logic independent of infrastructure
-//!
-//! ## Examples
-//!
-//! See the `examples/` directory for complete usage examples.
+//! ```rust
+//! use tyl_metrics_port::MockMetricsAdapter;
+//! 
+//! #[tokio::test]
+//! async fn test_metrics_collection() {
+//!     let metrics = MockMetricsAdapter::new();
+//!     // Use in tests...
+//! }
+//! ```
 
-use serde::{Deserialize, Serialize};
-use std::fmt;
-use thiserror::Error;
+// Re-export TYL framework functionality (CRITICAL pattern)
+pub use tyl_errors::{TylError, TylResult};
+pub use tyl_config::{ConfigPlugin, ConfigManager};
+pub use tyl_logging::Environment;
 
-/// Result type for {module} operations
-pub type {Module}Result<T> = Result<T, {Module}Error>;
+// Core port interface
+mod port;
+pub use port::{MetricsManager, HealthStatus};
 
-/// Errors that can occur during {module} operations
-#[derive(Debug, Error)]
-pub enum {Module}Error {
-    #[error("Configuration error: {message}")]
-    Configuration { message: String },
-    
-    #[error("Operation failed: {message}")]
-    Operation { message: String },
-    
-    #[error("Invalid input: {message}")]
-    InvalidInput { message: String },
-}
+// Domain types (port concern)
+mod types;
+pub use types::{
+    MetricRequest, MetricType, MetricValue, Labels, 
+    TimerGuard, MetricSnapshot
+};
 
-/// Port (Interface) - Replace with your actual port trait
-pub trait {MainTrait} {
-    /// Main operation - replace with actual methods
-    fn operation(&self, input: &str) -> {Module}Result<String>;
-}
+// Error helpers for metrics domain
+mod errors;
+pub use errors::{
+    metrics_error, metrics_config_error, metrics_connection_error,
+    metrics_recording_error, metrics_adapter_error, metrics_health_error,
+    metrics_serialization_error, metrics_timeout_error, MetricsErrorExt,
+    from_serde_json_error, from_io_error
+};
 
-/// Main type for {module} operations
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct {MainType} {
-    // Add fields as needed
-    pub name: String,
-}
+// Utilities and validation (port concern)
+mod utils;
+pub use utils::{validate_metric_name, format_labels};
 
-impl {MainType} {
-    /// Create a new instance
-    pub fn new(name: impl Into<String>) -> Self {
-        Self {
-            name: name.into(),
-        }
-    }
-}
+// Mock adapter for testing and examples
+#[cfg(feature = "mock")]
+mod mock;
+#[cfg(feature = "mock")]
+pub use mock::MockMetricsAdapter;
 
-impl Default for {MainType} {
-    fn default() -> Self {
-        Self::new("default")
-    }
-}
+// Always expose mock for examples and testing
+#[cfg(not(feature = "mock"))]
+mod mock;
+pub use mock::MockMetricsAdapter;
 
-/// Adapter - Basic implementation
-pub struct {BasicAdapter} {
-    inner: {MainType},
-}
+/// Result type for metrics operations using TYL error handling
+pub type Result<T> = TylResult<T>;
 
-impl {BasicAdapter} {
-    pub fn new(config: {MainType}) -> Self {
-        Self { inner: config }
-    }
-}
-
-impl Default for {BasicAdapter} {
-    fn default() -> Self {
-        Self::new({MainType}::default())
-    }
-}
-
-impl {MainTrait} for {BasicAdapter} {
-    fn operation(&self, input: &str) -> {Module}Result<String> {
-        // Replace with actual implementation
-        Ok(format!("Processed: {}", input))
-    }
-}
-
-// Utility functions
-pub fn generate_id() -> String {
-    uuid::Uuid::new_v4().to_string()
-}
+/// Re-export async_trait for adapter implementations
+pub use async_trait::async_trait;
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::mock::MockMetricsConfig;
 
-    #[test]
-    fn test_{module_name}_basic_functionality() {
-        // TDD: Start with failing tests, then implement
-        let adapter = {BasicAdapter}::default();
-        let result = adapter.operation("test input");
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), "Processed: test input");
-    }
-
-    #[test]
-    fn test_{main_type}_creation() {
-        let instance = {MainType}::new("test");
-        assert_eq!(instance.name, "test");
-    }
-
-    #[test]
-    fn test_default_implementation() {
-        let instance = {MainType}::default();
-        assert_eq!(instance.name, "default");
-    }
-
-    #[test]
-    fn test_trait_implementation() {
-        let adapter = {BasicAdapter}::default();
+    #[tokio::test]
+    async fn test_port_basic_functionality() {
+        let metrics = MockMetricsAdapter::new(MockMetricsConfig::default());
         
-        // Test the trait contract
-        let result = adapter.operation("hello");
+        let request = MetricRequest::counter("test_metric", 1.0)
+            .with_label("test", "true");
+            
+        let result = metrics.record(&request).await;
         assert!(result.is_ok());
     }
 
-    #[test]
-    fn test_error_handling() {
-        // Test error cases - add as needed
-        let error = {Module}Error::InvalidInput {
-            message: "test error".to_string(),
-        };
-        
-        assert!(error.to_string().contains("Invalid input"));
+    #[tokio::test]
+    async fn test_port_health_check() {
+        let metrics = MockMetricsAdapter::new(MockMetricsConfig::default());
+        let health = metrics.health_check().await;
+        assert!(health.is_ok());
     }
 
     #[test]
-    fn test_serialization() {
-        let instance = {MainType}::new("test");
-        let json = serde_json::to_string(&instance).unwrap();
-        let deserialized: {MainType} = serde_json::from_str(&json).unwrap();
-        assert_eq!(instance.name, deserialized.name);
+    fn test_metric_request_builder() {
+        let request = MetricRequest::gauge("memory_usage", 512.0)
+            .with_label("unit", "MB")
+            .with_label("server", "web-01");
+            
+        assert_eq!(request.name(), "memory_usage");
+        assert_eq!(request.metric_type(), &MetricType::Gauge);
+        assert_eq!(request.value(), 512.0);
+        assert_eq!(request.labels().len(), 2);
+    }
+
+    #[test]
+    fn test_tyl_error_integration() {
+        let error = metrics_error("test_metric", "Invalid metric name");
+        assert!(error.to_string().contains("Invalid metric name"));
+    }
+
+    #[test]
+    fn test_validation() {
+        assert!(validate_metric_name("valid_metric").is_ok());
+        assert!(validate_metric_name("").is_err());
+        assert!(validate_metric_name("invalid name").is_err());
     }
 }
