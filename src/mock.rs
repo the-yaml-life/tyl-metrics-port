@@ -96,11 +96,11 @@ impl MockMetricsConfig {
 /// # tokio_test::block_on(async {
 /// let config = MockMetricsConfig::new("test-app");
 /// let metrics = MockMetricsAdapter::new(config);
-/// 
+///
 /// // Record some metrics
 /// let request = MetricRequest::counter("test_counter", 1.0);
 /// metrics.record(&request).await.unwrap();
-/// 
+///
 /// // Inspect what was recorded
 /// let stored = metrics.get_stored_metrics().await;
 /// assert_eq!(stored.len(), 1);

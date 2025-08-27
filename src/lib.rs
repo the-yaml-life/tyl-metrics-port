@@ -69,7 +69,7 @@ pub use errors::{
 
 // Utilities and validation (port concern)
 mod utils;
-pub use utils::{format_labels, validate_metric_name, normalize_metric_name};
+pub use utils::{format_labels, normalize_metric_name, validate_metric_name};
 
 // Mock adapter for testing and examples
 #[cfg(feature = "mock")]
