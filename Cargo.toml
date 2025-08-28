@@ -34,5 +34,3 @@ tokio-test = "0.4"
 
 [features]
 default = []
-# Mock adapter for testing and examples
-mock = []

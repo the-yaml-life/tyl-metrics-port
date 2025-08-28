@@ -71,14 +71,7 @@ pub use errors::{
 mod utils;
 pub use utils::{format_labels, normalize_metric_name, validate_metric_name};
 
-// Mock adapter for testing and examples
-#[cfg(feature = "mock")]
-mod mock;
-#[cfg(feature = "mock")]
-pub use mock::{MockMetricsAdapter, MockMetricsConfig};
-
-// Always expose mock for examples and testing
-#[cfg(not(feature = "mock"))]
+// Mock adapter for testing and examples (always available)
 mod mock;
 pub use mock::{MockMetricsAdapter, MockMetricsConfig};
 
